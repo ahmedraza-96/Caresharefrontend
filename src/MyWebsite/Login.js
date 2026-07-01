@@ -23,7 +23,10 @@ import {
   VisibilityOff,
   Login as LoginIcon,
   Email as EmailIcon,
-  Lock as LockIcon
+  Lock as LockIcon,
+  AdminPanelSettings as AdminIcon,
+  VolunteerActivism as DonorIcon,
+  PersonSearch as RecipientIcon
 } from '@mui/icons-material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -56,22 +59,8 @@ const Login = () => {
     setShowPassword(!showPassword);
   };
 
-  const handleLogin = async (event) => {
-    event.preventDefault();
-    
-    // Input validation
-    if (!formData.email || !formData.password) {
-      setErrorMsg('All fields are required');
-      return;
-    }
-
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setErrorMsg('Please enter a valid email address');
-      return;
-    }
-
+  // Core sign-in routine, reused by the form submit and the demo buttons.
+  const performLogin = async (email, password) => {
     setIsLoading(true);
 
     try {
@@ -80,7 +69,7 @@ const Login = () => {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({ email, password })
       });
 
       const data = await response.json();
@@ -102,7 +91,7 @@ const Login = () => {
         });
 
         localStorage.setItem('clientToken', JSON.stringify(data));
-        
+
         if (data?.data === 'admin') {
           navigate("/admin");
         } else {
@@ -121,6 +110,39 @@ const Login = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleLogin = async (event) => {
+    event.preventDefault();
+
+    // Input validation
+    if (!formData.email || !formData.password) {
+      setErrorMsg('All fields are required');
+      return;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setErrorMsg('Please enter a valid email address');
+      return;
+    }
+
+    performLogin(formData.email, formData.password);
+  };
+
+  // Pre-seeded demo accounts so reviewers can explore each role with one click.
+  const DEMO_PASSWORD = 'Demo@12345';
+  const demoAccounts = [
+    { role: 'Admin', email: 'admin@careshare.app', icon: <AdminIcon />, color: '#264653' },
+    { role: 'Donor', email: 'donor@careshare.app', icon: <DonorIcon />, color: '#2A9D8F' },
+    { role: 'Recipient', email: 'recipient@careshare.app', icon: <RecipientIcon />, color: '#E76F51' },
+  ];
+
+  const handleDemoLogin = (email) => {
+    setFormData({ email, password: DEMO_PASSWORD });
+    setErrorMsg(null);
+    performLogin(email, DEMO_PASSWORD);
   };
 
   return (
@@ -337,6 +359,47 @@ const Login = () => {
                 </Button>
               </motion.div>
               
+              <Box sx={{ width: '100%', mt: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                  <Box sx={{ flex: 1, height: '1px', bgcolor: 'divider' }} />
+                  <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
+                    For reviewers — one-click demo login
+                  </Typography>
+                  <Box sx={{ flex: 1, height: '1px', bgcolor: 'divider' }} />
+                </Box>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  {demoAccounts.map((acc) => (
+                    <Button
+                      key={acc.role}
+                      onClick={() => handleDemoLogin(acc.email)}
+                      disabled={isLoading}
+                      variant="outlined"
+                      fullWidth
+                      startIcon={acc.icon}
+                      sx={{
+                        flexDirection: 'column',
+                        py: 1,
+                        borderRadius: '12px',
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        color: acc.color,
+                        borderColor: alpha(acc.color, 0.4),
+                        '& .MuiButton-startIcon': { m: 0, mb: 0.5 },
+                        '&:hover': {
+                          borderColor: acc.color,
+                          bgcolor: alpha(acc.color, 0.06),
+                        },
+                      }}
+                    >
+                      {acc.role}
+                    </Button>
+                  ))}
+                </Box>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center', mt: 1 }}>
+                  Password for all demo accounts: <b>{DEMO_PASSWORD}</b>
+                </Typography>
+              </Box>
+
               <Grid container justifyContent="center" sx={{ mt: 3 }}>
                 <Grid item>
                   <Typography variant="body2" color="text.secondary">
